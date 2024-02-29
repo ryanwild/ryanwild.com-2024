@@ -1,0 +1,49 @@
+@import "parts/_cards.scss";
+@import "parts/_code.scss";
+@import "parts/_header.scss";
+@import "parts/_footer.scss";
+@import "parts/_image.scss";
+@import "parts/misc.scss";
+@import "parts/table.scss";
+@import "parts/tags.scss";
+
+:root {
+  /* Used for: block comment, hr, ... */
+  --border-color: var(--bg-1);
+
+  /* Fonts */
+  --text-font: 'IBM Plex Mono Regular', monospace;
+  --header-font: 'IBM Plex Mono Bold', monospace;
+  --code-font: 'IBM Plex Mono Regular', monospace;
+
+  --footer-size: 80px;
+  --icon-size: 24px;
+}
+
+html {
+  background-color: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--text-font);
+  font-size: 1rem;
+  line-height: 1.6em;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  padding: 0;
+  margin: 0
+}
+
+.content {
+  min-height: calc(100% - var(--footer-size) - 40px);
+  margin: 20px auto;
+  padding: 0 20px;
+  word-wrap: break-word;
+}
+
+@media all and (min-width:1200px) {
+  .content {
+    max-width: 1000px;
+  }
+}

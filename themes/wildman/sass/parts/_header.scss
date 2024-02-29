@@ -1,0 +1,114 @@
+.page-header {
+  font-size: 2.5rem;
+  line-height: 100%;
+  font-family: var(--header-font);
+  margin: 2rem 0 1rem 0;
+}
+
+.centered-header {
+  font-family: var(--header-font);
+
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 4rem;
+}
+
+header {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+}
+
+.header-nav {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@media all and (max-width:640px) {
+  header {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: stretch;
+    align-items: flex-start;
+  }
+  .header-nav {
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: flex-start;
+  }
+}
+
+header .main {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  font-size: 1.5rem;
+
+  /* Otherwise header and menu is too close on small screens*/
+  margin-bottom: 20px;
+}
+
+.logo {
+  border: none;
+  text-decoration: none;
+}
+
+.logo-link {
+  border: none;
+  padding: 0;
+}
+
+.logo-link:hover {
+  background-color: unset;
+}
+
+.meta {
+  color: #999;
+  letter-spacing: -0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
+
+h1::before {
+  color: var(--primary-color);
+  // content: "# ";
+}
+
+h2::before {
+  color: var(--primary-color);
+}
+
+h3::before {
+  color: var(--primary-color);
+}
+
+h4::before {
+  color: var(--primary-color);
+}
+
+h5::before {
+  color: var(--primary-color);
+}
+
+h6::before {
+  color: var(--primary-color);
+}

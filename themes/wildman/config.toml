@@ -1,0 +1,43 @@
+base_url = "https://www.ryanwild.com"
+title = "wildman"
+build_search_index = false
+generate_feed = true
+compile_sass = true
+minify_html = true
+
+[markdown]
+highlight_code = true
+highlight_theme = "ayu-dark"
+
+[extra]
+toc = true
+use_cdn = false
+favicon = "/icon/favicon.png"
+theme = "toggle" # light, dark, auto, toggle
+# mathjax = true
+# mathjax_dollar_inline_enable = true
+
+copyright_date = 2024
+
+menu = [
+    { name = "/posts", url = "/posts", weight = 1 },
+    { name = "/projects", url = "/projects", weight = 2 },
+    { name = "/about", url = "/about", weight = 3 },
+]
+
+socials = [
+    { name = "github", url = "https://github.com/ryanwild/", icon = "github" },
+]
+
+custom_css = []
+
+[extra.analytics]
+enabled = false
+
+[extra.analytics.goatcounter]
+user = "your_user"
+host = "example.com"    # default= goatcounter.com
+
+[extra.analytics.umami]
+website_id = "43929cd1-1e83...."
+host_url = "https://stats.mywebsite.com" # default: https://analytics.eu.umami.is

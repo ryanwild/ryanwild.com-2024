@@ -1,0 +1,30 @@
+.work-history-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 0px 0px;
+  grid-template-areas:
+    ". . ."
+    ". . ."
+    ". . .";
+}
+
+.work-history-grid span {
+  border-left: 1px solid var(--primary-color);
+  padding-left: 20px;
+  text-align: left;
+}
+
+@media all and (max-width: 800px) {
+  .work-history-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    grid-template-areas:
+      "."
+  }
+  .work-history-grid span {
+    border-left: unset;
+    padding-left: unset;
+  }
+}
