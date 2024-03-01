@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /styleguide
+Allow: /
+Sitemap: /sitemap.xml
