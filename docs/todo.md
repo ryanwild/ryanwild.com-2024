@@ -2,4 +2,4 @@
 
  - [X] Git tag and get ready
  - [ ] Set up GitHub pages
- - [ ] Consider GitHub Actions but for now maybe publish manually
+ - [x] Consider GitHub Actions but for now maybe publish manually
