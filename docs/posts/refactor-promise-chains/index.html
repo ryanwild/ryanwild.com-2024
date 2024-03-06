@@ -1,0 +1,259 @@
+<!doctype html><html class="dark light"><head><meta charset=UTF-8><meta content="IE=edge" http-equiv=X-UA-Compatible><meta content="width=device-width,initial-scale=1.0" name=viewport><title>
+         Refactoring JavaScript Promise chains
+        
+    </title><meta content="Refactoring JavaScript Promise chains" property=og:title><link href=/favicon.ico rel=icon type=image/png><link href=/fonts.css rel=stylesheet><link href=/atom.xml rel=alternate title=ryanwild.com type=application/atom+xml><link href=/theme/light.css rel=stylesheet><link href=/theme/dark.css id=darkModeStyle rel=stylesheet><link href=/main.css media=screen rel=stylesheet><link href=/extra.css rel=stylesheet><body><div class=content><header><div class=main><a class=logo-link href=/> <img alt=ryanwild.com class=logo height=100 src=/logo.svg width=265> </a></div><nav class=header-nav><a href=/posts style=margin-left:.7em>/posts</a><a href=/about style=margin-left:.7em>/about</a></nav></header><main><article><div class=title><div class="page-header fx">refactoring javascript promise chains</div><div class=meta>Posted on <time>2022-01-02</time></div></div><section class=body><h2 id=introduction>Introduction</h2><p>I wrote some code a while ago, it works well and outputs the correct result but I honestly hate the style.<p>See here:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>collectFiles </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>dir</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected </span><span style=color:#f29668>= </span><span>[]) </span><span style=color:#ff7733>=> </span><span>{
+</span><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(dir)
+</span><span>  </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>((</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#f29718>file </span><span style=color:#ff7733>=> </span><span style=color:#ffb454>resolve</span><span>(dir</span><span style=color:#bfbab0cc>, </span><span>file))
+</span><span>  ))
+</span><span>  </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>((</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=font-style:italic;color:#39bae6>Promise</span><span style=color:#f29668>.</span><span style=color:#f07178>all</span><span>(
+</span><span>      list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>file</span><span>) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>        </span><span style=color:#ff7733>const </span><span>stat </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>stat</span><span>(file)</span><span style=color:#bfbab0cc>;
+</span><span>          </span><span style=color:#ff7733>return </span><span>{ file</span><span style=color:#bfbab0cc>, </span><span>stat }</span><span style=color:#bfbab0cc>;
+</span><span>      })
+</span><span>    )
+</span><span>  ))
+</span><span>  </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>((</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=font-style:italic;color:#39bae6>Promise</span><span style=color:#f29668>.</span><span style=color:#f07178>all</span><span>(
+</span><span>      list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>item</span><span>) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>        </span><span style=color:#ff7733>if </span><span>(item</span><span style=color:#f29668>.</span><span>stat</span><span style=color:#f29668>.</span><span style=color:#ffb454>isDirectory</span><span>()) {
+</span><span>            list</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(
+</span><span>              </span><span style=color:#ff7733>await </span><span style=color:#ffb454>collectFiles</span><span>(item</span><span style=color:#f29668>.</span><span>file</span><span style=color:#bfbab0cc>, </span><span>collected)
+</span><span>            )</span><span style=color:#bfbab0cc>;
+</span><span>        }
+</span><span>        </span><span style=color:#ff7733>return </span><span>item</span><span style=color:#bfbab0cc>;
+</span><span>      })
+</span><span>    )
+</span><span>  ))
+</span><span>  </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>((</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=color:#f29718>list
+</span><span>      </span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(({ </span><span style=color:#f29718>stat </span><span>}) </span><span style=color:#ff7733>=> </span><span>stat</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>())
+</span><span>      </span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(({ </span><span style=color:#f29718>file </span><span>}) </span><span style=color:#ff7733>=> </span><span>file</span><span style=color:#f29668>.</span><span style=color:#ffb454>endsWith</span><span>(</span><span style=color:#c2d94c>".md"</span><span>))
+</span><span>      </span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(({ </span><span style=color:#f29718>file </span><span>}) </span><span style=color:#ff7733>=> </span><span>file)
+</span><span>  ))</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>  collected</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(</span><span style=color:#f29668>...</span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>  </span><span style=color:#ff7733>return </span><span>collected</span><span style=color:#bfbab0cc>;
+</span><span>}
+</span></code></pre><h2 id=identifying-problems>Identifying Problems</h2><p>The code works and is concise however it combines <code>async/await</code> with a promise chains.<p>Why does this irritate me?<p>The promise chain uses anonymous functions that have no context, this makes it hard to understand because at each phase you must read every line of code before it makes sense.<p>As the chain increases in size it becomes harder to understand.<p>Testing this code is painful but we could run the code against the file system and assert the desired result to save some time, not ideal.<h2 id=getting-started>Getting Started</h2><p>If you need to dig into the example checkout the GitHub <a rel="noopener nofollow noreferrer" href=https://github.com/ryanwild/js-async-study target=_blank>repo</a>.<p>This will be a technical article so reading code from the repo is going to help you follow along, I recommend it.<p>First write a quick and dirty test function before we change anything:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>test </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>() </span><span style=color:#ff7733>=> </span><span>{
+</span><span>    </span><span style=color:#ff7733>let </span><span>files </span><span style=color:#f29668>= </span><span>[]</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>const </span><span>directory </span><span style=color:#f29668>= </span><span style=color:#c2d94c>"./example"</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>const </span><span>expected </span><span style=color:#f29668>= </span><span>[
+</span><span>        </span><span style=color:#c2d94c>"example/subfolder/super-secret.md"</span><span style=color:#bfbab0cc>,
+</span><span>        </span><span style=color:#c2d94c>"example/one.md"</span><span style=color:#bfbab0cc>,
+</span><span>        </span><span style=color:#c2d94c>"example/two.md"
+</span><span>    ]</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#f29718>file </span><span style=color:#ff7733>=> </span><span style=color:#ffb454>resolvePath</span><span>(file))</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ffb454>log</span><span>(</span><span style=color:#c2d94c>`Collecting files from: ${</span><span>directory</span><span style=color:#c2d94c>}`</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ff7733>try </span><span>{
+</span><span>        files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span style=color:#ffb454>collectFiles</span><span>(directory)</span><span style=color:#bfbab0cc>;
+</span><span>        </span><span style=color:#ffb454>log</span><span>(</span><span style=color:#c2d94c>`Result:`</span><span style=color:#bfbab0cc>, </span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>        </span><span style=color:#ffb454>assert</span><span>(</span><span style=color:#ffb454>utilEquals</span><span>(expected</span><span style=color:#bfbab0cc>, </span><span>files))</span><span style=color:#bfbab0cc>;
+</span><span>    } </span><span style=color:#ff7733>catch </span><span>(err) {
+</span><span>        </span><span style=color:#ffb454>log</span><span>(err)</span><span style=color:#bfbab0cc>;
+</span><span>    }
+</span><span>}</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ffb454>test</span><span>()</span><span style=color:#bfbab0cc>;
+</span></code></pre><p>Running this code will produce the following output:<pre class=language-bash data-lang=bash style=background:#0f1419;color:#bfbab0><code class=language-bash data-lang=bash><span style=color:#ffb454>$</span><span> node ./scratch.js
+</span><span style=color:#ffb454>Collecting</span><span> files from: ./example
+</span><span style=color:#ffb454>Result:</span><span> [
+</span><span>  </span><span style=color:#c2d94c>'/home/beast/Projects/collect-files/example/subfolder/super-secret.md'</span><span style=color:#ffb454>,
+</span><span>  </span><span style=color:#c2d94c>'/home/beast/Projects/collect-files/example/one.md'</span><span style=color:#ffb454>,
+</span><span>  </span><span style=color:#c2d94c>'/home/beast/Projects/collect-files/example/two.md'
+</span><span style=color:#ffb454>]
+</span></code></pre><h2 id=add-context-to-the-promise-chain>Add Context to the Promise Chain</h2><p>We can move each step within the promise chain to their own named function.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>resolveFiles </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>dir</span><span>) </span><span style=color:#ff7733>=> </span><span style=color:#f29718>list </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#f29718>filename </span><span style=color:#ff7733>=> </span><span style=color:#ffb454>resolvePath</span><span>(dir</span><span style=color:#bfbab0cc>, </span><span>filename))
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>recurseSubDirectory </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>collected</span><span>) </span><span style=color:#ff7733>=> </span><span>(</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=font-style:italic;color:#39bae6>Promise</span><span style=color:#f29668>.</span><span style=color:#f07178>all</span><span>(
+</span><span>        list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>item</span><span>) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>            </span><span style=color:#ff7733>if </span><span>(item</span><span style=color:#f29668>.</span><span>stat</span><span style=color:#f29668>.</span><span style=color:#ffb454>isDirectory</span><span>()) {
+</span><span>                list</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(
+</span><span>                    (</span><span style=color:#ff7733>await </span><span style=color:#ffb454>collectFiles</span><span>(item</span><span style=color:#f29668>.</span><span>file</span><span style=color:#bfbab0cc>, </span><span>collected))
+</span><span>                )</span><span style=color:#bfbab0cc>;
+</span><span>            }
+</span><span>            </span><span style=color:#ff7733>return </span><span>item</span><span style=color:#bfbab0cc>;
+</span><span>        })
+</span><span>    )
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>mapFileStats </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=font-style:italic;color:#39bae6>Promise</span><span style=color:#f29668>.</span><span style=color:#f07178>all</span><span>(
+</span><span>        list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>file</span><span>) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>            </span><span style=color:#ff7733>const </span><span>stat </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>stat</span><span>(file)</span><span style=color:#bfbab0cc>;
+</span><span>            </span><span style=color:#ff7733>return </span><span>{
+</span><span>                file</span><span style=color:#bfbab0cc>,
+</span><span>                stat</span><span style=color:#bfbab0cc>,
+</span><span>            }</span><span style=color:#bfbab0cc>;
+</span><span>        })
+</span><span>    )
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>onlyFiles </span><span style=color:#f29668>= </span><span style=color:#f29718>list </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(({ </span><span style=color:#f29718>stat </span><span>}) </span><span style=color:#ff7733>=> </span><span>stat</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>())
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>onlyFileType </span><span style=color:#f29668>= </span><span style=color:#f29718>list </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(({ </span><span style=color:#f29718>file </span><span>}) </span><span style=color:#ff7733>=> </span><span>file</span><span style=color:#f29668>.</span><span style=color:#ffb454>endsWith</span><span>(</span><span style=color:#c2d94c>".md"</span><span>))
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>mapFile </span><span style=color:#f29668>= </span><span style=color:#f29718>list </span><span style=color:#ff7733>=> </span><span>list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(({ </span><span style=color:#f29718>file </span><span>}) </span><span style=color:#ff7733>=> </span><span>file)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>collectFiles </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>dir</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected </span><span style=color:#f29668>= </span><span>[]) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>    </span><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(dir)
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(</span><span style=color:#ffb454>resolveFiles</span><span>(dir))
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(mapFileStats)
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(</span><span style=color:#ffb454>recurseSubDirectory</span><span>(collected))
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(onlyFiles)
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(onlyFileType)
+</span><span>        </span><span style=color:#f29668>.</span><span style=color:#f07178>then</span><span>(mapFile)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    collected</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(</span><span style=color:#f29668>...</span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>return </span><span>collected</span><span style=color:#bfbab0cc>;
+</span><span>}
+</span></code></pre><p>Much better, the <code>collectFiles</code> function has clear context and each step can be tested individually.<p>But this code still bothers me, it combines <code>async/await</code> with the promise chain what else can we do?<h2 id=remove-the-promise-chain>Remove the Promise Chain</h2><p>Use <code>await</code> for each step:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>collectFiles </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>dir</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected </span><span style=color:#f29668>= </span><span>[]) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>    </span><span style=color:#ff7733>let </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(dir)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ffb454>resolveFiles</span><span>(dir)(files)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span style=color:#ffb454>mapFileStats</span><span>(files)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span style=color:#ffb454>recurseSubDirectory</span><span>(collected)(files)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ffb454>onlyFiles</span><span>(files)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ffb454>onlyFileType</span><span>(files)</span><span style=color:#bfbab0cc>;
+</span><span>    files </span><span style=color:#f29668>= </span><span style=color:#ffb454>mapFile</span><span>(files)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    collected</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(</span><span style=color:#f29668>...</span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>return </span><span>collected</span><span style=color:#bfbab0cc>;
+</span><span>}
+</span></code></pre><p>Okay that is not too bad but looks like reduction.<p>Do we really have to reassign the <code>files</code> variable with each step?<p>Experience has taught me that often when you find yourself reassigning the same variable you can write a reducer to solve the same problem.<h2 id=execute-a-list-of-actions>Execute a List of Actions</h2><p>Adding the reducer:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>collectFiles </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>dir</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected </span><span style=color:#f29668>= </span><span>[]) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>    </span><span style=color:#ff7733>const </span><span>inputDirectory </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(
+</span><span>        </span><span style=color:#ffb454>resolvePath</span><span>(dir)
+</span><span>    )</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ff7733>const </span><span>actions </span><span style=color:#f29668>= </span><span>[
+</span><span>        </span><span style=color:#ffb454>fullFilePath</span><span>(dir)</span><span style=color:#bfbab0cc>,
+</span><span>        mapFileStats</span><span style=color:#bfbab0cc>,
+</span><span>        </span><span style=color:#ffb454>recurseSubDirectory</span><span>(collected)</span><span style=color:#bfbab0cc>,
+</span><span>        onlyFiles</span><span style=color:#bfbab0cc>,
+</span><span>        onlyFileType</span><span style=color:#bfbab0cc>,
+</span><span>        mapFile</span><span style=color:#bfbab0cc>,
+</span><span>    ]</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>actions</span><span style=color:#f29668>.</span><span style=color:#ffb454>reduce</span><span>(
+</span><span>        </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>list</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>action</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>            </span><span style=color:#ffb454>action</span><span>(</span><span style=color:#ff7733>await </span><span>list)
+</span><span>        )</span><span style=color:#bfbab0cc>,
+</span><span>        inputDirectory
+</span><span>    )</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    collected</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(</span><span style=color:#f29668>...</span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>return </span><span>collected</span><span style=color:#bfbab0cc>;
+</span><span>}
+</span></code></pre><p>Now walk through these changes to understand.<p>We get a list of files from the <code>inputDirectory</code> using <code>fs.readdir</code>, it is <code>async</code> so we <code>await</code> the result.<p>Once we have the list of files, we need to take a series of actions to produce the desired output, we define an <code>array</code> of actions that need to be taken:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span>actions </span><span style=color:#f29668>= </span><span>[
+</span><span>    </span><span style=color:#ffb454>fullFilePath</span><span>(dir)</span><span style=color:#bfbab0cc>,
+</span><span>    mapFileStats</span><span style=color:#bfbab0cc>,
+</span><span>    </span><span style=color:#ffb454>recurseSubDirectory</span><span>(collected)</span><span style=color:#bfbab0cc>,
+</span><span>    onlyFiles</span><span style=color:#bfbab0cc>,
+</span><span>    onlyFileType</span><span style=color:#bfbab0cc>,
+</span><span>    mapFile</span><span style=color:#bfbab0cc>,
+</span><span>]</span><span style=color:#bfbab0cc>;
+</span></code></pre><p>As you can see these are just the same references to the functions in the previous phase.<p>Now we can run these actions through a reducer to obtain the result:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>actions</span><span style=color:#f29668>.</span><span style=color:#ffb454>reduce</span><span>(
+</span><span>        </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>list</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>action</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>            </span><span style=color:#ffb454>action</span><span>(</span><span style=color:#ff7733>await </span><span>list)
+</span><span>        )</span><span style=color:#bfbab0cc>,
+</span><span>    inputDirectory
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span></code></pre><p>The result is a <code>Promise</code> so we <code>await</code> the result from the beginning:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>actions</span><span style=color:#f29668>.</span><span>reduce </span><span style=color:#f29668>...
+</span></code></pre><p>Next we define the reducer function:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>list</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>action</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=color:#ffb454>action</span><span>(</span><span style=color:#ff7733>await </span><span>list)
+</span><span>)</span><span style=color:#bfbab0cc>,
+</span></code></pre><p>In some cases, the previous <code>list</code> parameter would have been a <code>Promise</code> so we flag the function as <code>async</code> and <code>await</code> the list value.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ffb454>action</span><span>(</span><span style=color:#ff7733>await </span><span>list)
+</span></code></pre><h2 id=take-away>Take Away</h2><p>In JavaScript <code>Promise</code> is a lower-level abstraction than <code>async/await</code>, try to avoid promise chains.<p>If you cannot work your way out of promises, at least break out the callbacks into named functions to give your code context and meaning.<h2 id=bonus-round>Bonus Round</h2><p>Clean up some of the actions we can do better!<p>First things first, rename <code>dir</code> to <code>directory</code> abbreviations are awful and loose context for example is <code>dir</code> a directory or a <code>direction</code>?<p>I also hate the <code>dirent</code> abbreviation but this is a built in Node.js convention so to make it easier to cross reference with their documentation I will leave that as is.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>filterFiles </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>extension</span><span>) </span><span style=color:#ff7733>=> </span><span>(</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(</span><span style=color:#f29718>dirent </span><span style=color:#ff7733>=>
+</span><span>        (
+</span><span>            </span><span style=color:#f29668>!</span><span>extension </span><span style=color:#f29668>&&
+</span><span>            dirent</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>()
+</span><span>        ) </span><span style=color:#f29668>||
+</span><span>        (
+</span><span>            dirent</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>() </span><span style=color:#f29668>&&
+</span><span>            extension </span><span style=color:#f29668>&&
+</span><span>            dirent</span><span style=color:#f29668>.</span><span>name</span><span style=color:#f29668>.</span><span style=color:#ffb454>endsWith</span><span>(extension)
+</span><span>        )
+</span><span>    )
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>recurseSubDirectory </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>directory</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected</span><span>) </span><span style=color:#ff7733>=> </span><span>(</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    </span><span style=font-style:italic;color:#39bae6>Promise</span><span style=color:#f29668>.</span><span style=color:#f07178>all</span><span>(
+</span><span>        list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(</span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>dirent</span><span>) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>            </span><span style=color:#ff7733>if </span><span>(dirent</span><span style=color:#f29668>.</span><span style=color:#ffb454>isDirectory</span><span>()) {
+</span><span>                list</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(
+</span><span>                    (</span><span style=color:#ff7733>await </span><span style=color:#ffb454>collectFiles</span><span>(
+</span><span>                        </span><span style=color:#ffb454>resolvePath</span><span>(directory</span><span style=color:#bfbab0cc>, </span><span>dirent</span><span style=color:#f29668>.</span><span>name)</span><span style=color:#bfbab0cc>,
+</span><span>                        collected
+</span><span>                    ))
+</span><span>                )</span><span style=color:#bfbab0cc>;
+</span><span>            }
+</span><span>            </span><span style=color:#ff7733>return </span><span>dirent</span><span style=color:#bfbab0cc>;
+</span><span>        })
+</span><span>    )
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>mapFile </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>directory</span><span>) </span><span style=color:#ff7733>=> </span><span style=color:#f29718>list </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>map</span><span>(({ </span><span style=color:#f29718>name </span><span>}) </span><span style=color:#ff7733>=> </span><span style=color:#ffb454>resolvePath</span><span>(directory</span><span style=color:#bfbab0cc>, </span><span>name))
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span style=color:#ff7733>const </span><span style=color:#ffb454>collectFiles </span><span style=color:#f29668>= </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>directory</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>collected </span><span style=color:#f29668>= </span><span>[]) </span><span style=color:#ff7733>=> </span><span>{
+</span><span>    </span><span style=color:#ff7733>const </span><span>inputDirectory </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(
+</span><span>        </span><span style=color:#ffb454>resolvePath</span><span>(directory)</span><span style=color:#bfbab0cc>,
+</span><span>        {
+</span><span>            withFileTypes</span><span style=color:#bfbab0cc>: </span><span style=color:#f29718>true
+</span><span>        }
+</span><span>    )</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ff7733>const </span><span>actions </span><span style=color:#f29668>= </span><span>[
+</span><span>        </span><span style=color:#ffb454>recurseSubDirectory</span><span>(directory</span><span style=color:#bfbab0cc>, </span><span>collected)</span><span style=color:#bfbab0cc>,
+</span><span>        </span><span style=color:#ffb454>filterFiles</span><span>(</span><span style=color:#c2d94c>".md"</span><span>)</span><span style=color:#bfbab0cc>,
+</span><span>        </span><span style=color:#ffb454>mapFile</span><span>(directory)</span><span style=color:#bfbab0cc>,
+</span><span>    ]</span><span style=color:#bfbab0cc>;
+</span><span>
+</span><span>    </span><span style=color:#ff7733>const </span><span>files </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>actions</span><span style=color:#f29668>.</span><span style=color:#ffb454>reduce</span><span>(
+</span><span>        </span><span style=color:#ff7733>async </span><span>(</span><span style=color:#f29718>list</span><span style=color:#bfbab0cc>, </span><span style=color:#f29718>action</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>            </span><span style=color:#ffb454>action</span><span>(</span><span style=color:#ff7733>await </span><span>list)
+</span><span>        )</span><span style=color:#bfbab0cc>,
+</span><span>        inputDirectory
+</span><span>    )</span><span style=color:#bfbab0cc>;
+</span><span>    collected</span><span style=color:#f29668>.</span><span style=color:#f07178>push</span><span>(</span><span style=color:#f29668>...</span><span>files)</span><span style=color:#bfbab0cc>;
+</span><span>    </span><span style=color:#ff7733>return </span><span>collected</span><span style=color:#bfbab0cc>;
+</span><span>}
+</span></code></pre><p>We can remove the need to call <code>fs.stat</code> by calling <code>fs.readdir</code> with the <code>withFileTypes: true</code> option.<p>This will return a <code>dirent</code> object instead of the file name <code>string</code> which already has the <code>isDirectory()</code> and <code>isFile()</code> functions.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span>inputDirectory </span><span style=color:#f29668>= </span><span style=color:#ff7733>await </span><span>fs</span><span style=color:#f29668>.</span><span style=color:#ffb454>readdir</span><span>(
+</span><span>    </span><span style=color:#ffb454>resolvePath</span><span>(args</span><span style=color:#f29668>.</span><span>directory)</span><span style=color:#bfbab0cc>,
+</span><span>    {
+</span><span>        withFileTypes</span><span style=color:#bfbab0cc>: </span><span style=color:#f29718>true
+</span><span>    }
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span></code></pre><p>It would also be better to recurse sub directories as early as possible so update the actions array.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span>actions </span><span style=color:#f29668>= </span><span>[
+</span><span>    </span><span style=color:#ffb454>recurseSubDirectory</span><span>(directory</span><span style=color:#bfbab0cc>, </span><span>collected)</span><span style=color:#bfbab0cc>, </span><span style=font-style:italic;color:#5c6773>// first action called in the list
+</span><span>    </span><span style=color:#ffb454>filterFiles</span><span>(</span><span style=color:#c2d94c>".md"</span><span>)</span><span style=color:#bfbab0cc>, </span><span style=font-style:italic;color:#5c6773>// combined filter function to reduce looping over the array
+</span><span>    </span><span style=color:#ffb454>mapFile</span><span>(directory)</span><span style=color:#bfbab0cc>,
+</span><span>]</span><span style=color:#bfbab0cc>;
+</span></code></pre><p>Finally, we need to fix up some bugs from our changes so the <code>recurseSubDirectory</code> needed to resolve the input directory path.<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span>(</span><span style=color:#ff7733>await </span><span style=color:#ffb454>collectFiles</span><span>(
+</span><span>    </span><span style=color:#ffb454>resolvePath</span><span>(directory</span><span style=color:#bfbab0cc>, </span><span>dirent</span><span style=color:#f29668>.</span><span>name)</span><span style=color:#bfbab0cc>,
+</span><span>    collected
+</span><span>))
+</span></code></pre><p>Lastly the file filtering functions can be combined into one:<pre class=language-js data-lang=js style=background:#0f1419;color:#bfbab0><code class=language-js data-lang=js><span style=color:#ff7733>const </span><span style=color:#ffb454>filterFiles </span><span style=color:#f29668>= </span><span>(</span><span style=color:#f29718>extension</span><span>) </span><span style=color:#ff7733>=> </span><span>(</span><span style=color:#f29718>list</span><span>) </span><span style=color:#ff7733>=> </span><span>(
+</span><span>    list</span><span style=color:#f29668>.</span><span style=color:#ffb454>filter</span><span>(</span><span style=color:#f29718>dirent </span><span style=color:#ff7733>=>
+</span><span>        (
+</span><span>            </span><span style=color:#f29668>!</span><span>extension </span><span style=color:#f29668>&&
+</span><span>            dirent</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>()
+</span><span>        ) </span><span style=color:#f29668>||
+</span><span>        (
+</span><span>            dirent</span><span style=color:#f29668>.</span><span style=color:#ffb454>isFile</span><span>() </span><span style=color:#f29668>&&
+</span><span>            extension </span><span style=color:#f29668>&&
+</span><span>            dirent</span><span style=color:#f29668>.</span><span>name</span><span style=color:#f29668>.</span><span style=color:#ffb454>endsWith</span><span>(extension)
+</span><span>        )
+</span><span>    )
+</span><span>)</span><span style=color:#bfbab0cc>;
+</span></code></pre><h2 id=conclusion>Conclusion</h2><p>If you have made it this far thank you for following along.<p>Refactoring code is difficult and takes time, it is a good habit to do it every day in small chunks so that you minimize risk and increase iteration.<p>It is only through reading and rewriting code do we learn and find a better way to achieve the same results.<p>Always write a test case before making any changes, this is the law of refactoring without risk.<p>Remember that when you change function arguments you introduce a breaking change, search your code base to assess the impact this might have.</section></article></main></div><footer class=footer><div class=footer-links><a href=javascript:void(0) id=dark-mode-toggle onclick=toggleTheme()> <img id=sun-icon src=/feather/sun.svg style=filter:invert(1)> <img id=moon-icon src=/feather/moon.svg> </a><script src=/js/themetoggle.js></script> | <a rel="noopener noreferrer" class=social href=https://github.com/ryanwild/> <img alt=GitHub src=/social_icons/github.svg> </a></div><div class=copyright-notice>Content Copyright © ryanwild.com 2024</div></footer><script src=/js/txt-fx.min.js></script>
